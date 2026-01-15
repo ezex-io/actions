@@ -1,0 +1,66 @@
+name: Semantic PR Validation
+permissions:
+  pull-requests: write
+
+on:
+  workflow_call:
+    inputs:
+      requireScope:
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  validate-pr-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        id: lint_pr_title
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Configure that a scope should be provided.
+          requireScope: ${{ inputs.requireScope }}
+          # The subject should not start with an uppercase character and should not end with a period.
+          subjectPattern: ^(?![A-Z]).+[^.]$
+          subjectPatternError: |
+            The subject "{subject}" cannot start with an uppercase letter or end with a period.
+
+      - name: Notify Invalid PR Title
+        if: always() && steps.lint_pr_title.outputs.error_message != ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint-error
+          message: |
+            We require pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/) and
+            it looks like your proposed title needs to be adjusted:
+
+            ```
+            ${{ steps.lint_pr_title.outputs.error_message }}
+            ```
+
+            Please update the title to comply with the guidelines. Thank you!
+
+      - name: Warn Missing Scope
+        if: always() && !steps.lint_pr_title.outputs.scope
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint-no-scope
+          message: |
+            ⚠️ The pull request title does not include a scope. Consider adding one for better clarity.
+
+      - name: Remove Sticky Comment on Fixing Error
+        if: steps.lint_pr_title.outputs.error_message == ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint-error
+          delete: true
+
+      - name: Remove Sticky Comment on Fixing Scope
+        if: steps.lint_pr_title.outputs.scope
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-title-lint-no-scope
+          delete: true

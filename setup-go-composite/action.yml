@@ -1,11 +1,14 @@
 name: Setup Go
-description: Set up the Go toolchain and configure private module access
+description: Set up Go toolchain and configure access to private modules
 
 inputs:
   go-version:
     description: Go version to install
     required: false
     default: "1.25.5"
+  token:
+    description: Token for private modules
+    required: true
 
 runs:
   using: composite
@@ -17,8 +20,4 @@ runs:
       uses: actions/setup-go@v6
       with:
         go-version: ${{ inputs.go-version }}
-
-    - name: Configure access to private Go modules
-      shell: bash
-      run: |
-        echo "GOPRIVATE=github.com/ezex-io/*" >> "$GITHUB_ENV"
+        token: ${{ inputs.token }}

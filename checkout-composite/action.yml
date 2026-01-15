@@ -1,0 +1,8 @@
+name: Checkout Repository
+description: Check out the repository source code
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
